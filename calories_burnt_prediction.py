@@ -22,9 +22,6 @@ from sklearn.ensemble import RandomForestRegressor
 import warnings
 warnings.filterwarnings('ignore')
 
-from google.colab import files
-uploaded = files.upload()
-
 df1 = pd.read_csv('exercise.csv')
 df2 = pd.read_csv('calories.csv')
 
