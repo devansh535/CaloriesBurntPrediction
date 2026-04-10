@@ -99,4 +99,25 @@ for i in range(5):
     val_preds = models[i].predict(X_val)
     print('Validation Error : ', mae(Y_val, val_preds))
     print()
+#=====
+import streamlit as st
+st.title("Calories Burnt Prediction App")
+# Create input fields for the user
+gender = st.selectbox("Select Gender", ["Male", "Female"])
+age = st.number_input("Enter Age", min_value=1, max_value=100, value=25)
+height = st.number_input("Enter Height (cm)", min_value=50.0, max_value=250.0, value=170.0)
+weight = st.number_input("Enter Weight (kg)", min_value=10.0, max_value=200.0, value=70.0)
+duration = st.number_input("Exercise Duration (min)", min_value=1.0, max_value=150.0, value=30.0)
+heart_rate = st.number_input("Heart Rate", min_value=40.0, max_value=220.0, value=100.0)
+body_temp = st.number_input("Body Temperature (°C)", min_value=30.0, max_value=45.0, value=37.0)
+
+# Map gender to numerical value (as your model likely needs 0 and 1)
+gender_val = 0 if gender == "Male" else 1
+
+if st.button("Predict Calories"):
+    # Create the input array for the model
+    features = np.array([[gender_val, age, height, weight, duration, heart_rate, body_temp]])
+    prediction = model.predict(features)
+    
+    st.success(f"The estimated calories burnt is: {prediction[0]:.2f} kcal")
 
