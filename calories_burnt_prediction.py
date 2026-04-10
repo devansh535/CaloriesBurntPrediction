@@ -58,29 +58,62 @@ joblib.dump(model, 'model.pkl')
 joblib.dump(scaler, 'scaler.pkl')
 
 # ===============================
-# Streamlit App
+# Streamlit App (Enhanced UI)
 # ===============================
 
-st.title("Calories Burnt Prediction App")
+st.set_page_config(page_title="🔥 Calories Predictor", layout="centered")
 
-# Inputs
-gender = st.selectbox("Select Gender", ["Male", "Female"])
-age = st.number_input("Age", 1, 100, 25)
-height = st.number_input("Height (cm)", 50.0, 250.0, 170.0)
-weight = st.number_input("Weight (kg)", 10.0, 200.0, 70.0)
-duration = st.number_input("Exercise Duration (min)", 1.0, 150.0, 30.0)
-heart_rate = st.number_input("Heart Rate", 40.0, 220.0, 100.0)
-body_temp = st.number_input("Body Temperature (°C)", 30.0, 45.0, 37.0)
+# Custom Styling
+st.markdown("""
+    <style>
+    .main {
+        background-color: #0f172a;
+        color: white;
+    }
+    .stButton>button {
+        background-color: #22c55e;
+        color: white;
+        border-radius: 10px;
+        height: 50px;
+        width: 100%;
+        font-size: 18px;
+    }
+    .stNumberInput, .stSelectbox {
+        background-color: #1e293b;
+        border-radius: 10px;
+        padding: 5px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("## 🔥 Calories Burnt Prediction")
+st.caption("Estimate calories burned based on your workout and body metrics")
+
+# Layout columns
+col1, col2 = st.columns(2)
+
+with col1:
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    age = st.number_input("Age", 1, 100, 25)
+    height = st.number_input("Height (cm)", 50.0, 250.0, 170.0)
+    weight = st.number_input("Weight (kg)", 10.0, 200.0, 70.0)
+
+with col2:
+    duration = st.number_input("Duration (min)", 1.0, 150.0, 30.0)
+    heart_rate = st.number_input("Heart Rate", 40.0, 220.0, 100.0)
+    body_temp = st.number_input("Body Temp (°C)", 30.0, 45.0, 37.0)
 
 # Encode gender
 gender_val = 0 if gender == "Male" else 1
 
-# Load saved model (for real apps)
+# Load model
 model = joblib.load('model.pkl')
 scaler = joblib.load('scaler.pkl')
 
-# Prediction
-if st.button("Predict Calories"):
+st.markdown("---")
+
+# Prediction Button
+if st.button("🚀 Predict Calories Burned"):
     input_data = np.array([[
         gender_val,
         age,
@@ -91,9 +124,18 @@ if st.button("Predict Calories"):
         body_temp
     ]])
 
-    # Scale input
     input_data = scaler.transform(input_data)
-
     prediction = model.predict(input_data)
 
-    st.success(f"Estimated Calories Burnt: {prediction[0]:.2f} kcal")
+    st.markdown(f"""
+        <div style="
+            background-color:#1e293b;
+            padding:20px;
+            border-radius:15px;
+            text-align:center;
+        ">
+            <h2 style="color:#22c55e;">🔥 {prediction[0]:.2f} kcal</h2>
+            <p>Estimated Calories Burnt</p>
+        </div>
+    """, unsafe_allow_html=True)
+
