@@ -1,141 +1,89 @@
-# ===============================
-# Calories Burnt Prediction App
-# ===============================
+# =========================
+# Calories Burnt Prediction - Single File App
+# =========================
 
 import numpy as np
 import pandas as pd
 import streamlit as st
-import joblib
+import os
+import pickle
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
 
-# ===============================
-# Load and Prepare Data
-# ===============================
+# =========================
+# TRAIN MODEL (only if not saved)
+# =========================
 
-df1 = pd.read_csv('exercise.csv')
-df2 = pd.read_csv('calories.csv')
+if not os.path.exists("model.pkl") or not os.path.exists("scaler.pkl"):
 
-# Merge datasets
-df = df1.merge(df2, on='User_ID')
+    df1 = pd.read_csv('exercise.csv')
+    df2 = pd.read_csv('calories.csv')
 
-# Encode gender
-df.replace({'male': 0, 'female': 1}, inplace=True)
+    df = df1.merge(df2, on='User_ID')
 
-# Features & Target
-X = df.drop(['User_ID', 'Calories'], axis=1)
-y = df['Calories']
+    # Encode gender
+    df.replace({'male': 0, 'female': 1}, inplace=True)
 
-# Train-test split
-X_train, X_val, y_train, y_val = train_test_split(
-    X, y, test_size=0.1, random_state=42
-)
+    # Drop columns
+    df.drop(['User_ID', 'Weight', 'Duration'], axis=1, inplace=True)
 
-# Scaling
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_val = scaler.transform(X_val)
+    # Features
+    X = df.drop('Calories', axis=1)
+    y = df['Calories']
 
-# ===============================
-# Train Model
-# ===============================
+    # Split
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, y, test_size=0.1, random_state=22
+    )
 
-model = RandomForestRegressor()
-model.fit(X_train, y_train)
+    # Scale
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
 
-# Evaluate
-train_preds = model.predict(X_train)
-val_preds = model.predict(X_val)
+    # Model
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
 
-print("Training MAE:", mean_absolute_error(y_train, train_preds))
-print("Validation MAE:", mean_absolute_error(y_val, val_preds))
+    # Save
+    pickle.dump(model, open('model.pkl', 'wb'))
+    pickle.dump(scaler, open('scaler.pkl', 'wb'))
 
-# Save model & scaler (optional but recommended)
-joblib.dump(model, 'model.pkl')
-joblib.dump(scaler, 'scaler.pkl')
+# =========================
+# LOAD MODEL
+# =========================
 
-# ===============================
-# Streamlit App (Enhanced UI)
-# ===============================
+model = pickle.load(open('model.pkl', 'rb'))
+scaler = pickle.load(open('scaler.pkl', 'rb'))
 
-st.set_page_config(page_title="🔥 Calories Predictor", layout="centered")
+# =========================
+# STREAMLIT UI
+# =========================
 
-# Custom Styling
-st.markdown("""
-    <style>
-    .main {
-        background-color: #0f172a;
-        color: white;
-    }
-    .stButton>button {
-        background-color: #22c55e;
-        color: white;
-        border-radius: 10px;
-        height: 50px;
-        width: 100%;
-        font-size: 18px;
-    }
-    .stNumberInput, .stSelectbox {
-        background-color: #1e293b;
-        border-radius: 10px;
-        padding: 5px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Calories Predictor", page_icon="🔥")
 
-st.markdown("## 🔥 Calories Burnt Prediction")
-st.caption("Estimate calories burned based on your workout and body metrics")
+st.title("🔥 Calories Burnt Prediction App")
 
-# Layout columns
-col1, col2 = st.columns(2)
+st.markdown("Enter your workout details:")
 
-with col1:
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    age = st.number_input("Age", 1, 100, 25)
-    height = st.number_input("Height (cm)", 50.0, 250.0, 170.0)
-    weight = st.number_input("Weight (kg)", 10.0, 200.0, 70.0)
-
-with col2:
-    duration = st.number_input("Duration (min)", 1.0, 150.0, 30.0)
-    heart_rate = st.number_input("Heart Rate", 40.0, 220.0, 100.0)
-    body_temp = st.number_input("Body Temp (°C)", 30.0, 45.0, 37.0)
+# Inputs
+gender = st.selectbox("Gender", ["Male", "Female"])
+age = st.number_input("Age", 1, 100, 25)
+height = st.number_input("Height (cm)", 50.0, 250.0, 170.0)
+heart_rate = st.number_input("Heart Rate", 40.0, 220.0, 100.0)
+body_temp = st.number_input("Body Temperature (°C)", 30.0, 45.0, 37.0)
 
 # Encode gender
 gender_val = 0 if gender == "Male" else 1
 
-# Load model
-model = joblib.load('model.pkl')
-scaler = joblib.load('scaler.pkl')
+# Prediction
+if st.button("Predict Calories"):
 
-st.markdown("---")
-
-# Prediction Button
-if st.button("🚀 Predict Calories Burned"):
-    input_data = np.array([[
-        gender_val,
-        age,
-        height,
-        weight,
-        duration,
-        heart_rate,
-        body_temp
-    ]])
+    input_data = np.array([[gender_val, age, height, heart_rate, body_temp]])
 
     input_data = scaler.transform(input_data)
+
     prediction = model.predict(input_data)
 
-    st.markdown(f"""
-        <div style="
-            background-color:#1e293b;
-            padding:20px;
-            border-radius:15px;
-            text-align:center;
-        ">
-            <h2 style="color:#22c55e;">🔥 {prediction[0]:.2f} kcal</h2>
-            <p>Estimated Calories Burnt</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.success(f"🔥 Estimated Calories Burnt: {prediction[0]:.2f} kcal")
